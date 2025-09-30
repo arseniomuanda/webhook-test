@@ -57,21 +57,46 @@ app.listen(process.env.PORT, () => {
 
 
 // Endpoint para verificação do webhook (GET)
-app.get('/', (req, res) => {
+app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
     const verify_token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    const myToken = process.env.VERIFY_TOKEN;
+    const myToken = process.env.VERIFY_TOKEN || process.env.TOKEN;
 
-    console.log('Webhook verification attempt:', { mode, verify_token, challenge });
+    console.log('Webhook verification attempt:', { 
+        mode, 
+        verify_token, 
+        challenge,
+        expectedToken: myToken,
+        tokensMatch: verify_token === myToken
+    });
+
+    // Verificar se todos os parâmetros necessários estão presentes
+    if (!mode || !verify_token || !challenge) {
+        console.log('Missing required parameters:', { mode, verify_token, challenge });
+        return res.status(400).send('Missing required parameters');
+    }
+
+    // Verificar se o token de verificação está configurado
+    if (!myToken) {
+        console.log('VERIFY_TOKEN not configured in environment variables');
+        return res.status(500).send('Server configuration error');
+    }
 
     if (mode === 'subscribe' && verify_token === myToken) {
         console.log('Webhook verified successfully');
+        // IMPORTANTE: Retornar o challenge como texto puro, não JSON
+        res.setHeader('Content-Type', 'text/plain');
         res.status(200).send(challenge);
     } else {
-        console.log('Webhook verification failed');
-        res.sendStatus(403);
+        console.log('Webhook verification failed:', {
+            modeMatch: mode === 'subscribe',
+            tokenMatch: verify_token === myToken,
+            receivedToken: verify_token,
+            expectedToken: myToken
+        });
+        res.status(403).send('Forbidden');
     }
 });
 
