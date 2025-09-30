@@ -57,7 +57,7 @@ app.listen(process.env.PORT, () => {
 
 
 // Endpoint para verificação do webhook (GET)
-app.get('/webhook', (req, res) => {
+app.get('/', (req, res) => {
     const mode = req.query['hub.mode'];
     const verify_token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
