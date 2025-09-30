@@ -1,0 +1,1000 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "WhatsApp Cloud API Webhook",
+    "version": "1.0.0",
+    "description": "API para receber e processar webhooks do WhatsApp Cloud API. Suporta todos os tipos de mensagens: texto, áudio, imagem, vídeo, documento, localização, pedidos, reações, stickers e muito mais.",
+    "contact": {
+      "name": "WhatsApp Webhook API",
+      "email": "support@example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Servidor de desenvolvimento local"
+    },
+    {
+      "url": "https://your-domain.com",
+      "description": "Servidor de produção"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Webhook",
+      "description": "Endpoints para verificação e recebimento de webhooks"
+    },
+    {
+      "name": "Messages",
+      "description": "Endpoints para envio de mensagens"
+    },
+    {
+      "name": "Testing",
+      "description": "Endpoints para testes e simulação"
+    }
+  ],
+  "paths": {
+    "/webhook": {
+      "get": {
+        "tags": ["Webhook"],
+        "summary": "Verificação do Webhook",
+        "description": "Endpoint para verificação do webhook pelo Facebook. Usado durante a configuração inicial do webhook.",
+        "parameters": [
+          {
+            "name": "hub.mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "subscribe"
+            },
+            "description": "Modo de verificação (sempre 'subscribe')"
+          },
+          {
+            "name": "hub.verify_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "your_verify_token"
+            },
+            "description": "Token de verificação configurado no painel do Facebook"
+          },
+          {
+            "name": "hub.challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "challenge_string"
+            },
+            "description": "String de desafio enviada pelo Facebook"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook verificado com sucesso",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "challenge_string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Token de verificação inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Webhook"],
+        "summary": "Receber Notificações do Webhook",
+        "description": "Endpoint para receber notificações de mensagens e status do WhatsApp. Processa todos os tipos de mensagens: texto, áudio, imagem, vídeo, documento, localização, pedidos, reações, stickers, etc.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "type": "string",
+                    "example": "whatsapp_business_account"
+                  },
+                  "entry": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "102290129340398"
+                        },
+                        "changes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "object",
+                                "properties": {
+                                  "messaging_product": {
+                                    "type": "string",
+                                    "example": "whatsapp"
+                                  },
+                                  "metadata": {
+                                    "type": "object",
+                                    "properties": {
+                                      "display_phone_number": {
+                                        "type": "string",
+                                        "example": "15550783881"
+                                      },
+                                      "phone_number_id": {
+                                        "type": "string",
+                                        "example": "106540352242922"
+                                      }
+                                    }
+                                  },
+                                  "messages": {
+                                    "type": "array",
+                                    "items": {
+                                      "oneOf": [
+                                        {
+                                          "$ref": "#/components/schemas/TextMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/AudioMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/ImageMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/VideoMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/DocumentMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/LocationMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/OrderMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/ReactionMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/StickerMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/InteractiveMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/ContactsMessage"
+                                        },
+                                        {
+                                          "$ref": "#/components/schemas/ButtonMessage"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "statuses": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/components/schemas/StatusMessage"
+                                    }
+                                  }
+                                }
+                              },
+                              "field": {
+                                "type": "string",
+                                "example": "messages"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notificação processada com sucesso"
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/send-message": {
+      "post": {
+        "tags": ["Messages"],
+        "summary": "Enviar Mensagem",
+        "description": "Endpoint para enviar mensagens via WhatsApp. Suporta mensagens de texto e templates.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mensagem enviada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/send-hello-world": {
+      "post": {
+        "tags": ["Messages"],
+        "summary": "Enviar Template Hello World",
+        "description": "Endpoint simplificado para enviar o template hello_world do WhatsApp.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["to"],
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "example": "5511999999999",
+                    "description": "Número do destinatário"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Template enviado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Número do destinatário não fornecido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test-order": {
+      "post": {
+        "tags": ["Testing"],
+        "summary": "Testar Processamento de Pedidos",
+        "description": "Endpoint para testar o processamento de mensagens de pedidos com dados simulados.",
+        "responses": {
+          "200": {
+            "description": "Teste executado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Order processing test completed"
+                    },
+                    "orderId": {
+                      "type": "string",
+                      "example": "wamid.test123"
+                    },
+                    "totalItems": {
+                      "type": "integer",
+                      "example": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SendMessageRequest": {
+        "type": "object",
+        "required": ["to", "type", "message"],
+        "properties": {
+          "to": {
+            "type": "string",
+            "example": "5511999999999",
+            "description": "Número do destinatário"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["text", "template"],
+            "example": "text",
+            "description": "Tipo da mensagem"
+          },
+          "message": {
+            "type": "object",
+            "description": "Conteúdo da mensagem",
+            "properties": {
+              "text": {
+                "type": "string",
+                "example": "Olá! Esta é uma mensagem de teste."
+              },
+              "template_name": {
+                "type": "string",
+                "example": "hello_world"
+              },
+              "language_code": {
+                "type": "string",
+                "example": "en_US"
+              }
+            }
+          }
+        }
+      },
+      "SendMessageResponse": {
+        "type": "object",
+        "properties": {
+          "messaging_product": {
+            "type": "string",
+            "example": "whatsapp"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "string",
+                  "example": "5511999999999"
+                },
+                "wa_id": {
+                  "type": "string",
+                  "example": "5511999999999"
+                }
+              }
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Missing required fields"
+          }
+        }
+      },
+      "TextMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "text"
+          },
+          "text": {
+            "type": "object",
+            "properties": {
+              "body": {
+                "type": "string",
+                "example": "Olá! Como posso ajudar?"
+              }
+            }
+          }
+        }
+      },
+      "AudioMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "audio"
+          },
+          "audio": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "audio_id_123"
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "audio/ogg"
+              },
+              "sha256": {
+                "type": "string",
+                "example": "sha256_hash"
+              }
+            }
+          }
+        }
+      },
+      "ImageMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "image"
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "image_id_123"
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "image/jpeg"
+              },
+              "sha256": {
+                "type": "string",
+                "example": "sha256_hash"
+              },
+              "caption": {
+                "type": "string",
+                "example": "Legenda da imagem"
+              }
+            }
+          }
+        }
+      },
+      "VideoMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "video"
+          },
+          "video": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "video_id_123"
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "video/mp4"
+              },
+              "sha256": {
+                "type": "string",
+                "example": "sha256_hash"
+              },
+              "caption": {
+                "type": "string",
+                "example": "Legenda do vídeo"
+              }
+            }
+          }
+        }
+      },
+      "DocumentMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "document"
+          },
+          "document": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "document_id_123"
+              },
+              "filename": {
+                "type": "string",
+                "example": "documento.pdf"
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "application/pdf"
+              },
+              "sha256": {
+                "type": "string",
+                "example": "sha256_hash"
+              }
+            }
+          }
+        }
+      },
+      "LocationMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "location"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "example": -23.5505
+              },
+              "longitude": {
+                "type": "number",
+                "example": -46.6333
+              },
+              "name": {
+                "type": "string",
+                "example": "São Paulo, SP"
+              },
+              "address": {
+                "type": "string",
+                "example": "Endereço completo"
+              }
+            }
+          }
+        }
+      },
+      "OrderMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "order"
+          },
+          "order": {
+            "type": "object",
+            "properties": {
+              "catalog_id": {
+                "type": "string",
+                "example": "194836987003835"
+              },
+              "text": {
+                "type": "string",
+                "example": "Love these!"
+              },
+              "product_items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "product_retailer_id": {
+                      "type": "string",
+                      "example": "di9ozbzfi4"
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "item_price": {
+                      "type": "number",
+                      "example": 30
+                    },
+                    "currency": {
+                      "type": "string",
+                      "example": "USD"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ReactionMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "reaction"
+          },
+          "reaction": {
+            "type": "object",
+            "properties": {
+              "emoji": {
+                "type": "string",
+                "example": "👍"
+              },
+              "message_id": {
+                "type": "string",
+                "example": "wamid.original_message_id"
+              }
+            }
+          }
+        }
+      },
+      "StickerMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "sticker"
+          },
+          "sticker": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "sticker_id_123"
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "image/webp"
+              },
+              "sha256": {
+                "type": "string",
+                "example": "sha256_hash"
+              },
+              "animated": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "InteractiveMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "interactive"
+          },
+          "interactive": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "list_reply"
+              },
+              "list_reply": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "example": "list_item_id"
+                  },
+                  "title": {
+                    "type": "string",
+                    "example": "Título do item"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Descrição do item"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ContactsMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "contacts"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "object",
+                  "properties": {
+                    "formatted_name": {
+                      "type": "string",
+                      "example": "João Silva"
+                    },
+                    "first_name": {
+                      "type": "string",
+                      "example": "João"
+                    },
+                    "last_name": {
+                      "type": "string",
+                      "example": "Silva"
+                    }
+                  }
+                },
+                "phones": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "example": "+5511999999999"
+                      },
+                      "type": {
+                        "type": "string",
+                        "example": "MOBILE"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ButtonMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "from": {
+            "type": "string",
+            "example": "16505551234"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "type": {
+            "type": "string",
+            "example": "button"
+          },
+          "button": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "example": "Texto do botão"
+              },
+              "payload": {
+                "type": "string",
+                "example": "button_payload"
+              }
+            }
+          }
+        }
+      },
+      "StatusMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wamid.HBgLMTY1MDM4Nzk0MzkVAgASGBQzQUFERjg0NDEzNDdFODU3MUMxMAA="
+          },
+          "status": {
+            "type": "string",
+            "enum": ["sent", "delivered", "read", "failed"],
+            "example": "delivered"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "1750096325"
+          },
+          "recipient_id": {
+            "type": "string",
+            "example": "16505551234"
+          }
+        }
+      }
+    }
+  }
+}
